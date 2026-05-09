@@ -9,13 +9,16 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onLanguage:typescript",
+    "onLanguage:typescriptreact"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "tsassethover.helloWorld",
-        "title": "Hello World"
+        "command": "extension.openImage",
+        "title": "Open Image"
       }
     ]
   },
