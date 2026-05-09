@@ -2,7 +2,7 @@
 
 All notable changes to the TSAssetHover extension will be documented in this file.
 
-## [0.0.1] - 2026-05-09
+## [1.0.0] - 2026-05-09
 
 ### Added
 

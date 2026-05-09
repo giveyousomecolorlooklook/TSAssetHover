@@ -7,6 +7,7 @@ src/**
 .yarnrc
 webpack.config.js
 vsc-extension-quickstart.md
+images/icon.svg
 **/tsconfig.json
 **/eslint.config.mjs
 **/*.map

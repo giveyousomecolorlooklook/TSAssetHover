@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="TSAssetHover icon">
+  <defs>
+    <linearGradient id="bg" x1="18" y1="10" x2="110" y2="118" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2f80ed"/>
+      <stop offset="1" stop-color="#134e8f"/>
+    </linearGradient>
+    <linearGradient id="preview" x1="34" y1="36" x2="93" y2="89" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#d9f2ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#09213d" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <rect width="128" height="128" rx="24" fill="url(#bg)"/>
+  <path d="M18 92L50 46L76 76L94 56L113 92V104H18V92Z" fill="#0b2f55" opacity="0.26"/>
+
+  <g filter="url(#shadow)">
+    <rect x="27" y="28" width="74" height="66" rx="10" fill="url(#preview)"/>
+    <rect x="35" y="38" width="30" height="14" rx="3" fill="#f7c948"/>
+    <rect x="35" y="59" width="58" height="6" rx="3" fill="#2f80ed" opacity="0.38"/>
+    <rect x="35" y="71" width="44" height="6" rx="3" fill="#2f80ed" opacity="0.3"/>
+    <path d="M38 88L55 68L68 80L77 70L94 88H38Z" fill="#1f9d55"/>
+    <circle cx="84" cy="47" r="8" fill="#ffb020"/>
+  </g>
+
+  <path d="M34 30H68V49H34V30Z" fill="#3178c6"/>
+  <path d="M42.5 36.2H59.5V39.5H53.1V52H49V39.5H42.5V36.2Z" fill="#ffffff"/>
+  <path d="M60.6 51.1V47.4C61.5 48.1 62.9 48.8 64.4 48.8C65.6 48.8 66.2 48.4 66.2 47.7C66.2 47.1 65.7 46.8 64 46.2C61.6 45.4 60.6 44.2 60.6 42.2C60.6 39.8 62.6 38.3 65.5 38.3C66.9 38.3 68.2 38.6 69.2 39.1V42.6C68.1 41.9 67 41.5 65.7 41.5C64.7 41.5 64.1 41.9 64.1 42.5C64.1 43.1 64.6 43.4 66.1 43.9C68.8 44.8 69.8 46 69.8 48C69.8 50.5 67.8 52 64.6 52C63 52 61.5 51.7 60.6 51.1Z" fill="#ffffff"/>
+
+  <path d="M76 75L111 88L96 96L90 113L76 75Z" fill="#ffffff" stroke="#0b2f55" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M91 94L102 108" stroke="#0b2f55" stroke-width="6" stroke-linecap="round"/>
+</svg>
