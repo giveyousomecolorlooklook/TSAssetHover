@@ -2,6 +2,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as zlib from 'zlib';
 import { isPreviewImageType, isWorkspaceFileType, PREVIEW_MAX_SIZE } from './config';
+import { localize } from './messages';
 import { decodeBlpForPreview } from './utils/blp';
 
 const OPEN_FILE_COMMAND = 'extension.openFile';
@@ -29,8 +30,8 @@ export function activate(context: vscode.ExtensionContext) {
 			const uri = vscode.Uri.parse(uriText);
 			await vscode.commands.executeCommand('vscode.open', uri);
 		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
-			vscode.window.showErrorMessage(`无法打开文件：${message}`);
+			const detail = error instanceof Error ? error.message : String(error);
+			vscode.window.showErrorMessage(localize('error.openFile', { detail }));
 		}
 	});
 
@@ -39,15 +40,15 @@ export function activate(context: vscode.ExtensionContext) {
 		async (fileUriText: string) => {
 			const availableCommands = await vscode.commands.getCommands(true);
 			if (!availableCommands.includes(CHATGPT_ADD_FILE_TO_THREAD_COMMAND)) {
-				vscode.window.showWarningMessage('未找到 ChatGPT 插件命令 chatgpt.addFileToThread。');
+				vscode.window.showWarningMessage(localize('warning.chatGptCommandMissing'));
 				return;
 			}
 
 			try {
 				await vscode.commands.executeCommand(CHATGPT_ADD_FILE_TO_THREAD_COMMAND, vscode.Uri.parse(fileUriText));
 			} catch (error) {
-				const message = error instanceof Error ? error.message : String(error);
-				vscode.window.showErrorMessage(`发送文件给 ChatGPT 失败：${message}`);
+				const detail = error instanceof Error ? error.message : String(error);
+				vscode.window.showErrorMessage(localize('error.sendToChatGpt', { detail }));
 			}
 		}
 	);
@@ -66,7 +67,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 				const fileUri = resolveWorkspaceFileUri(match.rawPath, document);
 				if (!fileUri || !(await fileExists(fileUri))) {
-					return new vscode.Hover('文件未找到', match.range);
+					return new vscode.Hover(localize('hover.fileNotFound'), match.range);
 				}
 
 				const assetContext = createAssetCodeContext(document, match, fileUri);
@@ -207,7 +208,7 @@ async function createImagePreviewMarkdown(
 	markdown.isTrusted = { enabledCommands: [OPEN_FILE_COMMAND, SEND_TO_CHATGPT_COMMAND] };
 	markdown.supportHtml = true;
 	markdown.appendMarkdown(
-		`<img src="${escapeHtmlAttribute(preview.source)}" width="${preview.width}" height="${preview.height}" alt="图片预览" />\n\n`
+		`<img src="${escapeHtmlAttribute(preview.source)}" width="${preview.width}" height="${preview.height}" alt="${escapeHtmlAttribute(localize('image.alt'))}" />\n\n`
 	);
 	markdown.appendMarkdown(createActionLinks(commandUri, assetContext));
 
@@ -225,7 +226,7 @@ function createPreviewErrorMarkdown(
 	const markdown = new vscode.MarkdownString(undefined, true);
 
 	markdown.isTrusted = { enabledCommands: [OPEN_FILE_COMMAND, SEND_TO_CHATGPT_COMMAND] };
-	markdown.appendMarkdown(`图片预览生成失败：${message}\n\n`);
+	markdown.appendMarkdown(`${localize('preview.failed', { detail: message })}\n\n`);
 	markdown.appendMarkdown(createActionLinks(commandUri, assetContext));
 
 	return markdown;
@@ -248,7 +249,7 @@ function createActionLinks(openFileCommandUri: vscode.Uri, assetContext: AssetCo
 		`command:${SEND_TO_CHATGPT_COMMAND}?${encodeURIComponent(JSON.stringify([assetContext.fileUri]))}`
 	);
 
-	return `[打开文件](${openFileCommandUri.toString()}) | [发送文件给 ChatGPT](${sendToChatGptCommandUri.toString()})`;
+	return `[${localize('action.openFile')}](${openFileCommandUri.toString()}) | [${localize('action.sendToChatGpt')}](${sendToChatGptCommandUri.toString()})`;
 }
 
 async function createPreviewDataUri(imageUri: vscode.Uri): Promise<ImagePreview> {
@@ -292,7 +293,7 @@ async function createPreviewDataUri(imageUri: vscode.Uri): Promise<ImagePreview>
 	}
 
 	if (extension !== '.tga') {
-		throw new Error(`暂不支持预览 ${extension} 文件`);
+		throw new Error(localize('preview.unsupportedExtension', { extension }));
 	}
 
 	const tgaImage = decodeTga(bytes);
@@ -322,7 +323,7 @@ function readPngSize(bytes: Uint8Array): ImageSize {
 	const pngSignature = '89504e470d0a1a0a';
 
 	if (data.length < 24 || data.subarray(0, 8).toString('hex') !== pngSignature) {
-		throw new Error('PNG 文件头不完整');
+		throw new Error(localize('png.incompleteHeader'));
 	}
 
 	return {
@@ -336,7 +337,7 @@ function readJpegSize(bytes: Uint8Array): ImageSize {
 	let offset = 2;
 
 	if (data.length < 4 || data[0] !== 0xFF || data[1] !== 0xD8) {
-		throw new Error('JPEG 文件头不完整');
+		throw new Error(localize('jpeg.incompleteHeader'));
 	}
 
 	while (offset < data.length) {
@@ -368,7 +369,7 @@ function readJpegSize(bytes: Uint8Array): ImageSize {
 		offset += segmentLength;
 	}
 
-	throw new Error('无法读取 JPEG 尺寸');
+	throw new Error(localize('jpeg.unreadableSize'));
 }
 
 function isJpegStartOfFrame(marker: number): boolean {
@@ -421,7 +422,7 @@ function resizeToFit(image: RgbaImage, maxSize: number): RgbaImage {
 
 function decodeTga(bytes: Uint8Array): RgbaImage {
 	if (bytes.length < 18) {
-		throw new Error('TGA 文件头不完整');
+		throw new Error(localize('tga.incompleteHeader'));
 	}
 
 	const data = Buffer.from(bytes);
@@ -435,15 +436,15 @@ function decodeTga(bytes: Uint8Array): RgbaImage {
 	const bytesPerPixel = bitsPerPixel / 8;
 
 	if (colorMapType !== 0) {
-		throw new Error('暂不支持调色板 TGA 预览');
+		throw new Error(localize('tga.unsupportedPalette'));
 	}
 
 	if (![2, 3, 10, 11].includes(imageType)) {
-		throw new Error(`暂不支持的 TGA 类型：${imageType}`);
+		throw new Error(localize('tga.unsupportedType', { type: imageType }));
 	}
 
 	if (!Number.isInteger(bytesPerPixel) || ![1, 2, 3, 4].includes(bytesPerPixel)) {
-		throw new Error(`暂不支持的 TGA 位深：${bitsPerPixel}`);
+		throw new Error(localize('tga.unsupportedBitDepth', { bits: bitsPerPixel }));
 	}
 
 	const pixelCount = width * height;
@@ -472,7 +473,7 @@ function decodeTga(bytes: Uint8Array): RgbaImage {
 
 	const readPixel = (): [number, number, number, number] => {
 		if (offset + bytesPerPixel > data.length) {
-			throw new Error('TGA 像素数据不完整');
+			throw new Error(localize('tga.incompletePixelData'));
 		}
 
 		if (isGrayscale) {
@@ -507,7 +508,7 @@ function decodeTga(bytes: Uint8Array): RgbaImage {
 		}
 
 		if (offset >= data.length) {
-			throw new Error('TGA RLE 数据不完整');
+			throw new Error(localize('tga.incompleteRleData'));
 		}
 
 		const packetHeader = data[offset++];

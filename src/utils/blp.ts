@@ -1,3 +1,5 @@
+import { localize } from '../messages';
+
 export type BlpRgbaImage = {
 	kind: 'rgba';
 	width: number;
@@ -28,15 +30,15 @@ export function decodeBlpForPreview(bytes: Uint8Array, maxSize: number): BlpPrev
 	}
 
 	if (magic === 'BLP2') {
-		throw new Error('暂不支持 BLP2 预览');
+		throw new Error(localize('blp2.unsupportedPreview'));
 	}
 
-	throw new Error('不是有效的 BLP 文件');
+	throw new Error(localize('blp.invalidFile'));
 }
 
 function decodeBlp1(data: Buffer, maxSize: number): BlpPreviewImage {
 	if (data.length < BLP1_HEADER_SIZE) {
-		throw new Error('BLP1 文件头不完整');
+		throw new Error(localize('blp1.incompleteHeader'));
 	}
 
 	const compression = data.readUInt32LE(4);
@@ -49,7 +51,7 @@ function decodeBlp1(data: Buffer, maxSize: number): BlpPreviewImage {
 	const mipmapSizes = readUInt32Array(data, 92, MIPMAP_COUNT);
 
 	if (width === 0 || height === 0) {
-		throw new Error('BLP1 图片尺寸无效');
+		throw new Error(localize('blp1.invalidSize'));
 	}
 
 	if (compression === 0) {
@@ -57,16 +59,16 @@ function decodeBlp1(data: Buffer, maxSize: number): BlpPreviewImage {
 	}
 
 	if (compression !== 1) {
-		throw new Error(`暂不支持的 BLP1 压缩类型：${compression}`);
+		throw new Error(localize('blp1.unsupportedCompression', { compression }));
 	}
 
 	if (data.length < BLP1_HEADER_SIZE + BLP_PALETTE_SIZE) {
-		throw new Error('BLP1 调色板数据不完整');
+		throw new Error(localize('blp1.incompletePalette'));
 	}
 
 	// Warcraft III 常见 BLP1 RAW 图片通常是 pictureType 4/5，使用 256 色 BGRA 调色板。
 	if (pictureType !== 4 && pictureType !== 5) {
-		throw new Error(`暂不支持的 BLP1 图片类型：${pictureType}/${pictureSubType}`);
+		throw new Error(localize('blp1.unsupportedPictureType', { pictureType, pictureSubType }));
 	}
 
 	const mipmapLevel = chooseMipmapLevel(width, height, maxSize, mipmapOffsets, mipmapSizes);
@@ -92,7 +94,7 @@ function decodeBlp1Jpeg(
 	mipmapSizes: number[]
 ): BlpEncodedImage {
 	if (data.length < BLP1_HEADER_SIZE + 4) {
-		throw new Error('BLP1 JPEG 头不完整');
+		throw new Error(localize('blp1.jpegIncompleteHeader'));
 	}
 
 	const jpegHeaderSize = data.readUInt32LE(BLP1_HEADER_SIZE);
@@ -100,7 +102,7 @@ function decodeBlp1Jpeg(
 	const jpegHeaderEnd = jpegHeaderOffset + jpegHeaderSize;
 
 	if (jpegHeaderEnd > data.length) {
-		throw new Error('BLP1 JPEG 共享头超出文件范围');
+		throw new Error(localize('blp1.jpegSharedHeaderOutOfRange'));
 	}
 
 	const mipmapLevel = chooseMipmapLevel(width, height, maxSize, mipmapOffsets, mipmapSizes);
@@ -108,11 +110,11 @@ function decodeBlp1Jpeg(
 	const mipmapSize = mipmapSizes[mipmapLevel];
 
 	if (mipmapOffset === 0 && jpegHeaderSize === 0) {
-		throw new Error('BLP1 JPEG mipmap 数据为空');
+		throw new Error(localize('blp1.jpegEmptyMipmap'));
 	}
 
 	if (mipmapOffset + mipmapSize > data.length) {
-		throw new Error('BLP1 JPEG mipmap 数据不完整');
+		throw new Error(localize('blp1.jpegIncompleteMipmap'));
 	}
 
 	const jpegHeader = data.subarray(jpegHeaderOffset, jpegHeaderEnd);
@@ -142,7 +144,7 @@ function decodeBlp1Paletted(
 	const imageSize = mipmapSize || pixelCount;
 
 	if (imageOffset + imageSize > data.length || imageOffset + pixelCount > data.length) {
-		throw new Error('BLP1 像素数据不完整');
+		throw new Error(localize('blp1.incompletePixelData'));
 	}
 
 	const rgba = new Uint8Array(pixelCount * 4);
