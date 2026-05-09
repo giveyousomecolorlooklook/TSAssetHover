@@ -1,71 +1,75 @@
-# tsassethover README
+# TSAssetHover
 
-This is the README for your extension "tsassethover". After writing up a brief description, we recommend including the following sections.
+TSAssetHover is a VS Code extension for TypeScript projects. It detects string literals that point to workspace files, shows image previews on hover, and lets you open or send the referenced file to the Codex/ChatGPT extension.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- Hover preview for image paths in TypeScript and TSX files.
+- Clickable `Open File` action for any supported workspace file path.
+- Clickable `Send File to ChatGPT` action using `chatgpt.addFileToThread` when the OpenAI Codex/ChatGPT extension is installed.
+- Workspace-safe path resolution for Windows and Unix separators.
+- Missing files show `文件未找到`.
+- Large previews are scaled to a configurable maximum size.
 
-For example if there is an image subfolder under your extension project workspace:
+## Supported Images
 
-\!\[feature X\]\(images/feature-x.png\)
+Image preview support is configured in [src/config.ts](src/config.ts):
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+```ts
+export const IMAGE_FILE_TYPES = ['png', 'jpg', 'jpeg', 'tga', 'blp'];
+```
+
+Current decoder behavior:
+
+- `png`, `jpg`, `jpeg`: embedded as data URIs and scaled in the hover.
+- `tga`: decoded locally and rendered as PNG data URI.
+- `blp`: supports Warcraft III BLP1 palette/raw images and BLP1 JPEG-compressed images. BLP2 is not supported yet.
+
+## Supported Workspace Files
+
+Workspace file hover support is configured in [src/config.ts](src/config.ts):
+
+```ts
+export const WORKSPACE_FILE_TYPES = ['*'];
+```
+
+Supported config patterns:
+
+- `png`
+- `.png`
+- `*.png`
+- `*`
+- `*.*`
+
+`*` means any workspace file with an extension can show an `Open File` action. Only types listed in `IMAGE_FILE_TYPES` try to render an image preview.
+
+## Usage
+
+In a TypeScript or TSX file, hover a string literal such as:
+
+```ts
+const icon = "assets/images/ui_icon.blp";
+const font = "assets/fonts/main.ttf";
+```
+
+For image files, the hover shows a preview plus actions. For non-image files, the hover shows file actions only.
+
+## Commands
+
+This extension registers internal command-link commands:
+
+- `extension.openFile`
+- `extension.sendAssetContextToChatGPT`
+
+They are intended for hover links and are hidden from the command palette.
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+- VS Code `^1.118.0`
+- Optional: OpenAI Codex/ChatGPT extension for the `Send File to ChatGPT` action.
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+- BLP2 preview is not implemented.
+- Some uncommon BLP1 variants may not decode yet.
+- SVG and WebP are not included by default, but can be added to config if preview support is implemented.

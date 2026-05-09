@@ -1,13 +1,27 @@
 {
   "name": "tsassethover",
+  "publisher": "chentp0601",
   "displayName": "TSAssetHover",
-  "description": "",
+  "description": "Preview TypeScript string-literal asset paths and open referenced workspace files from hover.",
   "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/giveyousomecolorlooklook/TSAssetHover.git"
+  },
   "engines": {
     "vscode": "^1.118.0"
   },
   "categories": [
     "Other"
+  ],
+  "keywords": [
+    "typescript",
+    "assets",
+    "hover",
+    "image-preview",
+    "warcraft",
+    "blp",
+    "tga"
   ],
   "activationEvents": [
     "onLanguage:typescript",
@@ -20,9 +34,39 @@
     "commands": [
       {
         "command": "extension.openFile",
-        "title": "Open File"
+        "title": "Open Referenced Asset File",
+        "category": "TSAssetHover"
+      },
+      {
+        "command": "extension.sendAssetContextToChatGPT",
+        "title": "Send Referenced Asset File to ChatGPT",
+        "category": "TSAssetHover"
       }
-    ]
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "extension.openFile",
+          "when": "false"
+        },
+        {
+          "command": "extension.sendAssetContextToChatGPT",
+          "when": "false"
+        }
+      ]
+    }
+  },
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "TSAssetHover resolves and reads files from the local workspace file system."
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",
