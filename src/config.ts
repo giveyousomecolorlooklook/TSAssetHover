@@ -1,7 +1,7 @@
 import * as path from 'path';
 
 // 支持生成图片预览的文件类型。写法支持 "png"、".png"、"*.png" 和 "*"。
-export const IMAGE_FILE_TYPES = ['png', 'jpg', 'jpeg', 'tga'];
+export const IMAGE_FILE_TYPES = ['png', 'jpg', 'jpeg', 'tga', 'blp'];
 
 // 支持在 hover 中提供“打开文件”链接的工作区文件类型。
 // "*" 表示任何有扩展名的工作区文件都可以生成打开链接。

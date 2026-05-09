@@ -2,8 +2,11 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import * as zlib from 'zlib';
 import { isPreviewImageType, isWorkspaceFileType, PREVIEW_MAX_SIZE } from './config';
+import { decodeBlpForPreview } from './utils/blp';
 
 const OPEN_FILE_COMMAND = 'extension.openFile';
+const SEND_TO_CHATGPT_COMMAND = 'extension.sendAssetContextToChatGPT';
+const CHATGPT_ADD_FILE_TO_THREAD_COMMAND = 'chatgpt.addFileToThread';
 
 type FileLiteralMatch = {
 	rawPath: string;
@@ -16,6 +19,10 @@ type ImagePreview = {
 	height: number;
 };
 
+type AssetCodeContext = {
+	fileUri: string;
+};
+
 export function activate(context: vscode.ExtensionContext) {
 	const openFileDisposable = vscode.commands.registerCommand(OPEN_FILE_COMMAND, async (uriText: string) => {
 		try {
@@ -26,6 +33,24 @@ export function activate(context: vscode.ExtensionContext) {
 			vscode.window.showErrorMessage(`无法打开文件：${message}`);
 		}
 	});
+
+	const sendToChatGptDisposable = vscode.commands.registerCommand(
+		SEND_TO_CHATGPT_COMMAND,
+		async (fileUriText: string) => {
+			const availableCommands = await vscode.commands.getCommands(true);
+			if (!availableCommands.includes(CHATGPT_ADD_FILE_TO_THREAD_COMMAND)) {
+				vscode.window.showWarningMessage('未找到 ChatGPT 插件命令 chatgpt.addFileToThread。');
+				return;
+			}
+
+			try {
+				await vscode.commands.executeCommand(CHATGPT_ADD_FILE_TO_THREAD_COMMAND, vscode.Uri.parse(fileUriText));
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error);
+				vscode.window.showErrorMessage(`发送文件给 ChatGPT 失败：${message}`);
+			}
+		}
+	);
 
 	const hoverDisposable = vscode.languages.registerHoverProvider(
 		[
@@ -44,21 +69,22 @@ export function activate(context: vscode.ExtensionContext) {
 					return new vscode.Hover('文件未找到', match.range);
 				}
 
+				const assetContext = createAssetCodeContext(document, match, fileUri);
 				if (!isPreviewImageType(fileUri.fsPath)) {
-					return new vscode.Hover(createOpenFileMarkdown(fileUri), match.range);
+					return new vscode.Hover(createOpenFileMarkdown(fileUri, assetContext), match.range);
 				}
 
 				try {
-					return new vscode.Hover(await createImagePreviewMarkdown(fileUri), match.range);
+					return new vscode.Hover(await createImagePreviewMarkdown(fileUri, assetContext), match.range);
 				} catch (error) {
 					const message = error instanceof Error ? error.message : String(error);
-					return new vscode.Hover(createPreviewErrorMarkdown(fileUri, message), match.range);
+					return new vscode.Hover(createPreviewErrorMarkdown(fileUri, message, assetContext), match.range);
 				}
 			}
 		}
 	);
 
-	context.subscriptions.push(openFileDisposable, hoverDisposable);
+	context.subscriptions.push(openFileDisposable, sendToChatGptDisposable, hoverDisposable);
 }
 
 export function deactivate() {}
@@ -158,49 +184,71 @@ async function fileExists(uri: vscode.Uri): Promise<boolean> {
 	}
 }
 
-async function createImagePreviewMarkdown(imageUri: vscode.Uri): Promise<vscode.MarkdownString> {
+function createAssetCodeContext(
+	_document: vscode.TextDocument,
+	_match: FileLiteralMatch,
+	fileUri: vscode.Uri
+): AssetCodeContext {
+	return {
+		fileUri: fileUri.toString()
+	};
+}
+
+async function createImagePreviewMarkdown(
+	imageUri: vscode.Uri,
+	assetContext: AssetCodeContext
+): Promise<vscode.MarkdownString> {
 	const commandUri = vscode.Uri.parse(
 		`command:${OPEN_FILE_COMMAND}?${encodeURIComponent(JSON.stringify([imageUri.toString()]))}`
 	);
 	const markdown = new vscode.MarkdownString(undefined, true);
 	const preview = await createPreviewDataUri(imageUri);
 
-	markdown.isTrusted = { enabledCommands: [OPEN_FILE_COMMAND] };
+	markdown.isTrusted = { enabledCommands: [OPEN_FILE_COMMAND, SEND_TO_CHATGPT_COMMAND] };
 	markdown.supportHtml = true;
 	markdown.appendMarkdown(
 		`<img src="${escapeHtmlAttribute(preview.source)}" width="${preview.width}" height="${preview.height}" alt="图片预览" />\n\n`
 	);
-	markdown.appendMarkdown(`[打开文件](${commandUri.toString()})\n\n`);
-	markdown.appendMarkdown(`\`${path.basename(imageUri.fsPath)}\``);
+	markdown.appendMarkdown(createActionLinks(commandUri, assetContext));
 
 	return markdown;
 }
 
-function createPreviewErrorMarkdown(imageUri: vscode.Uri, message: string): vscode.MarkdownString {
+function createPreviewErrorMarkdown(
+	imageUri: vscode.Uri,
+	message: string,
+	assetContext: AssetCodeContext
+): vscode.MarkdownString {
 	const commandUri = vscode.Uri.parse(
 		`command:${OPEN_FILE_COMMAND}?${encodeURIComponent(JSON.stringify([imageUri.toString()]))}`
 	);
 	const markdown = new vscode.MarkdownString(undefined, true);
 
-	markdown.isTrusted = { enabledCommands: [OPEN_FILE_COMMAND] };
+	markdown.isTrusted = { enabledCommands: [OPEN_FILE_COMMAND, SEND_TO_CHATGPT_COMMAND] };
 	markdown.appendMarkdown(`图片预览生成失败：${message}\n\n`);
-	markdown.appendMarkdown(`[打开文件](${commandUri.toString()})\n\n`);
-	markdown.appendMarkdown(`\`${path.basename(imageUri.fsPath)}\``);
+	markdown.appendMarkdown(createActionLinks(commandUri, assetContext));
 
 	return markdown;
 }
 
-function createOpenFileMarkdown(fileUri: vscode.Uri): vscode.MarkdownString {
+function createOpenFileMarkdown(fileUri: vscode.Uri, assetContext: AssetCodeContext): vscode.MarkdownString {
 	const commandUri = vscode.Uri.parse(
 		`command:${OPEN_FILE_COMMAND}?${encodeURIComponent(JSON.stringify([fileUri.toString()]))}`
 	);
 	const markdown = new vscode.MarkdownString(undefined, true);
 
-	markdown.isTrusted = { enabledCommands: [OPEN_FILE_COMMAND] };
-	markdown.appendMarkdown(`[打开文件](${commandUri.toString()})\n\n`);
-	markdown.appendMarkdown(`\`${path.basename(fileUri.fsPath)}\``);
+	markdown.isTrusted = { enabledCommands: [OPEN_FILE_COMMAND, SEND_TO_CHATGPT_COMMAND] };
+	markdown.appendMarkdown(createActionLinks(commandUri, assetContext));
 
 	return markdown;
+}
+
+function createActionLinks(openFileCommandUri: vscode.Uri, assetContext: AssetCodeContext): string {
+	const sendToChatGptCommandUri = vscode.Uri.parse(
+		`command:${SEND_TO_CHATGPT_COMMAND}?${encodeURIComponent(JSON.stringify([assetContext.fileUri]))}`
+	);
+
+	return `[打开文件](${openFileCommandUri.toString()}) | [发送文件给 ChatGPT](${sendToChatGptCommandUri.toString()})`;
 }
 
 async function createPreviewDataUri(imageUri: vscode.Uri): Promise<ImagePreview> {
@@ -220,6 +268,26 @@ async function createPreviewDataUri(imageUri: vscode.Uri): Promise<ImagePreview>
 		return {
 			source: `data:image/jpeg;base64,${Buffer.from(bytes).toString('base64')}`,
 			...fitPreviewSize(size.width, size.height)
+		};
+	}
+
+	if (extension === '.blp') {
+		const blpImage = decodeBlpForPreview(bytes, PREVIEW_MAX_SIZE);
+
+		if (blpImage.kind === 'encoded') {
+			return {
+				source: `data:${blpImage.mime};base64,${blpImage.bytes.toString('base64')}`,
+				...fitPreviewSize(blpImage.width, blpImage.height)
+			};
+		}
+
+		const previewImage = resizeToFit(blpImage, PREVIEW_MAX_SIZE);
+		const pngBytes = encodePng(previewImage.width, previewImage.height, previewImage.rgba);
+
+		return {
+			source: `data:image/png;base64,${pngBytes.toString('base64')}`,
+			width: previewImage.width,
+			height: previewImage.height
 		};
 	}
 

@@ -11,7 +11,9 @@
   ],
   "activationEvents": [
     "onLanguage:typescript",
-    "onLanguage:typescriptreact"
+    "onLanguage:typescriptreact",
+    "onCommand:extension.openFile",
+    "onCommand:extension.sendAssetContextToChatGPT"
   ],
   "main": "./dist/extension.js",
   "contributes": {
