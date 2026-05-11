@@ -2,6 +2,20 @@
 
 All notable changes to the TSAssetHover extension will be documented in this file.
 
+## [1.0.1] - 2026-05-11
+
+### Added
+
+- Added English and Chinese localization for hover actions, preview errors, and decoder messages.
+
+### Changed
+
+- Replaced the BLP preview decoder with a `war3-model`-based BLP1/JPEG decoding implementation.
+
+### Fixed
+
+- Fixed BLP preview decoding for byte-offset `Uint8Array` inputs, preventing incorrect pixel and alpha data reads.
+
 ## [1.0.0] - 2026-05-09
 
 ### Added

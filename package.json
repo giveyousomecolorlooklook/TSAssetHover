@@ -3,7 +3,7 @@
   "publisher": "chentp0601",
   "displayName": "TSAssetHover",
   "description": "Preview TypeScript string-literal asset paths and open referenced workspace files from hover.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "icon": "images/icon.png",
   "repository": {
     "type": "git",
