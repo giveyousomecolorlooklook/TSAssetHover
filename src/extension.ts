@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import * as zlib from 'zlib';
 import { isPreviewImageType, isWorkspaceFileType, PREVIEW_MAX_SIZE } from './config';
 import { localize } from './messages';
-import { decodeBlpForPreview } from './utils/blp';
+import { decodeBlpForPreview } from './utils/blpDecoder';
 
 const OPEN_FILE_COMMAND = 'extension.openFile';
 const SEND_TO_CHATGPT_COMMAND = 'extension.sendAssetContextToChatGPT';
@@ -273,15 +273,7 @@ async function createPreviewDataUri(imageUri: vscode.Uri): Promise<ImagePreview>
 	}
 
 	if (extension === '.blp') {
-		const blpImage = decodeBlpForPreview(bytes, PREVIEW_MAX_SIZE);
-
-		if (blpImage.kind === 'encoded') {
-			return {
-				source: `data:${blpImage.mime};base64,${blpImage.bytes.toString('base64')}`,
-				...fitPreviewSize(blpImage.width, blpImage.height)
-			};
-		}
-
+		const blpImage = decodeBlpForPreview(bytes);
 		const previewImage = resizeToFit(blpImage, PREVIEW_MAX_SIZE);
 		const pngBytes = encodePng(previewImage.width, previewImage.height, previewImage.rgba);
 
