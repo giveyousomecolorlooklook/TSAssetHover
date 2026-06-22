@@ -14,6 +14,7 @@ All notable changes to the TSAssetHover extension will be documented in this fil
 
 ### Fixed
 
+- Avoid embedding large PNG and JPEG files as base64 data URIs in hover previews; native image files now use file URIs with the same 200px preview sizing limit as other image types.
 - Fixed BLP preview decoding for byte-offset `Uint8Array` inputs, preventing incorrect pixel and alpha data reads.
 
 ## [1.0.0] - 2026-05-09

@@ -203,7 +203,7 @@ async function createImagePreviewMarkdown(
 		`command:${OPEN_FILE_COMMAND}?${encodeURIComponent(JSON.stringify([imageUri.toString()]))}`
 	);
 	const markdown = new vscode.MarkdownString(undefined, true);
-	const preview = await createPreviewDataUri(imageUri);
+	const preview = await createImagePreview(imageUri);
 
 	markdown.isTrusted = { enabledCommands: [OPEN_FILE_COMMAND, SEND_TO_CHATGPT_COMMAND] };
 	markdown.supportHtml = true;
@@ -252,14 +252,14 @@ function createActionLinks(openFileCommandUri: vscode.Uri, assetContext: AssetCo
 	return `[${localize('action.openFile')}](${openFileCommandUri.toString()}) | [${localize('action.sendToChatGpt')}](${sendToChatGptCommandUri.toString()})`;
 }
 
-async function createPreviewDataUri(imageUri: vscode.Uri): Promise<ImagePreview> {
+async function createImagePreview(imageUri: vscode.Uri): Promise<ImagePreview> {
 	const bytes = await vscode.workspace.fs.readFile(imageUri);
 	const extension = path.extname(imageUri.fsPath).toLowerCase();
 
 	if (extension === '.png') {
 		const size = readPngSize(bytes);
 		return {
-			source: `data:image/png;base64,${Buffer.from(bytes).toString('base64')}`,
+			source: imageUri.toString(),
 			...fitPreviewSize(size.width, size.height)
 		};
 	}
@@ -267,7 +267,7 @@ async function createPreviewDataUri(imageUri: vscode.Uri): Promise<ImagePreview>
 	if (extension === '.jpg' || extension === '.jpeg') {
 		const size = readJpegSize(bytes);
 		return {
-			source: `data:image/jpeg;base64,${Buffer.from(bytes).toString('base64')}`,
+			source: imageUri.toString(),
 			...fitPreviewSize(size.width, size.height)
 		};
 	}
